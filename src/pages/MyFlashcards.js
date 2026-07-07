@@ -7,22 +7,17 @@ import { MdDelete, MdSearch } from 'react-icons/md';
 export default function MyFlashcards() {
   const cards = useSelector((state) => state.flashcards.cards);
   const dispatch = useDispatch();
-  
-  // State to hold the active search text input
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Filter cards dynamically based on group name matching the query
   const filteredCards = cards.filter((group) =>
     group.groupName.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
     <div className="max-w-6xl mx-auto pb-12">
-      {/* Top Heading Actions Bar */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         <h2 className="text-xl font-bold text-gray-700 dark:text-gray-200">My Flashcards</h2>
         
-        {/* Modern Live Search Bar Input Wrapper */}
         {cards.length > 0 && (
           <div className="relative w-full md:w-80">
             <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
@@ -39,7 +34,6 @@ export default function MyFlashcards() {
         )}
       </div>
 
-      {/* Conditional Dashboard Views */}
       {cards.length === 0 ? (
         <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 text-center">
           <p className="text-gray-500 dark:text-gray-400 mb-4">No flashcards created yet.</p>
@@ -48,19 +42,16 @@ export default function MyFlashcards() {
           </Link>
         </div>
       ) : filteredCards.length === 0 ? (
-        /* View displayed if a query returns zero matches */
         <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 text-center">
           <p className="text-gray-500 dark:text-gray-400">No flashcard groups match your search query.</p>
         </div>
       ) : (
-        /* Responsive Render Grid Layout mapping the filtered results array */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredCards.map((group) => (
             <div 
               key={group.id} 
               className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between relative group"
             >
-              {/* Delete Action Button */}
               <button
                 onClick={() => dispatch(deleteFlashcard(group.id))}
                 className="absolute top-4 right-4 text-gray-300 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-500 md:opacity-0 group-hover:opacity-100 transition-all duration-200 p-1.5 hover:bg-red-50 dark:hover:bg-gray-700 rounded-lg"
@@ -70,9 +61,14 @@ export default function MyFlashcards() {
               </button>
 
               <div>
-                <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-2 pr-6 group-hover:text-red-500 transition-colors">
-                  {group.groupName}
-                </h3>
+                <div className="flex items-center space-x-3 mb-3">
+                  {group.groupImage && (
+                    <img src={group.groupImage} alt="" className="h-8 w-8 rounded-lg object-cover border border-gray-100 dark:border-gray-600" />
+                  )}
+                  <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 pr-6 group-hover:text-red-500 transition-colors line-clamp-1">
+                    {group.groupName}
+                  </h3>
+                </div>
                 <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-4 leading-relaxed">
                   {group.description}
                 </p>
