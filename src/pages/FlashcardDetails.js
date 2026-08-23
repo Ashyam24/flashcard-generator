@@ -10,14 +10,18 @@ import {
   FiCheck, 
   FiCpu,
   FiChevronLeft,
-  FiChevronRight
+  FiChevronRight,
+  FiEdit2
 } from 'react-icons/fi';
 
 const FlashcardDetails = () => {
   const { id } = useParams();
+  
+  // Extract flashcard groups from the global Redux store
   const cards = useSelector((state) => state.flashcards.cards);
   const currentGroup = cards.find((group) => group.id === id);
 
+  // Local component states for UI interaction & active card indexing
   const [activeTermIndex, setActiveTermIndex] = useState(0);
   const [showShareModal, setShowShareModal] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -25,6 +29,7 @@ const FlashcardDetails = () => {
   const [aiSummary, setAiSummary] = useState('');
   const printRef = useRef(null);
 
+  // Fallback view when group ID does not match any stored records
   if (!currentGroup) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-16 text-center">
@@ -38,7 +43,7 @@ const FlashcardDetails = () => {
 
   const activeTerm = currentGroup.terms?.[activeTermIndex] || {};
 
-  // AI Study Assistant Parser
+  // AI Study Assistant: splits definition text to isolate core definitions and takeaways
   const handleAiSummarize = () => {
     if (!activeTerm.definition) return;
     setIsAiSummarized(true);
@@ -53,16 +58,19 @@ const FlashcardDetails = () => {
     });
   };
 
+  // Clipboard share handler
   const handleCopyLink = () => {
     navigator.clipboard.writeText(window.location.href);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
   };
 
+  // Print triggering handler
   const handlePrint = () => {
     window.print();
   };
 
+  // Export current flashcard group to a downloadable JSON file
   const handleDownload = () => {
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(currentGroup, null, 2));
     const downloadAnchor = document.createElement('a');
@@ -73,6 +81,7 @@ const FlashcardDetails = () => {
     downloadAnchor.remove();
   };
 
+  // Pagination navigation controls
   const handleNext = () => {
     if (activeTermIndex < currentGroup.terms.length - 1) {
       setActiveTermIndex(prev => prev + 1);
@@ -89,7 +98,7 @@ const FlashcardDetails = () => {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8" ref={printRef}>
-      {/* Top Breadcrumb & Header */}
+      {/* Top Breadcrumb & Group Header */}
       <div className="mb-6">
         <Link to="/my-flashcards" className="inline-flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 mb-4 transition">
           <FiArrowLeft /> Back to My Flashcards
@@ -113,10 +122,10 @@ const FlashcardDetails = () => {
         </div>
       </div>
 
-      {/* Main Grid: Term Selector (Left) & Active Card Content (Right) */}
+      {/* Main Grid: Sidebar (Left) | Viewer (Center) | Toolbar (Right) */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         
-        {/* Left Column: Flashcards List Sidebar */}
+        {/* Left Column: Term Selection Sidebar */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 h-fit">
           <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3 px-2">
             Flashcards ({currentGroup.terms?.length || 0})
@@ -141,11 +150,11 @@ const FlashcardDetails = () => {
           </div>
         </div>
 
-        {/* Center Column: Active Flashcard Viewer */}
+        {/* Center Column: Selected Card Viewer */}
         <div className="lg:col-span-2 space-y-4">
           <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 min-h-[380px] flex flex-col justify-between">
             <div>
-              {/* Term Image rendering */}
+              {/* Optional Term Image Rendering */}
               {activeTerm.termImage && (
                 <div className="mb-4 w-full h-56 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
                   <img
@@ -163,7 +172,7 @@ const FlashcardDetails = () => {
                 {activeTerm.definition}
               </p>
 
-              {/* AI Study Assistant Box */}
+              {/* AI Study Assistant Output Card */}
               {isAiSummarized && aiSummary && (
                 <div className="mt-6 p-4 rounded-xl bg-gradient-to-r from-red-50 to-orange-50 dark:from-gray-700 dark:to-gray-700 border border-red-200 dark:border-gray-600 animate-fadeIn">
                   <div className="flex items-center gap-2 text-red-600 dark:text-red-400 font-bold text-sm mb-2">
@@ -177,7 +186,7 @@ const FlashcardDetails = () => {
               )}
             </div>
 
-            {/* AI Assistant Button & Nav Controls */}
+            {/* AI Action Trigger & Next/Prev Controls */}
             <div className="pt-6 mt-6 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between gap-2 flex-wrap">
               <button
                 type="button"
@@ -210,8 +219,16 @@ const FlashcardDetails = () => {
           </div>
         </div>
 
-        {/* Right Column: Actions Toolbar */}
+        {/* Right Column: Interactive Actions Sidebar */}
         <div className="space-y-3">
+          {/* Edit Group link to load data into CreateFlashcard */}
+          <Link
+            to={`/edit/${currentGroup.id}`}
+            className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition font-medium text-center"
+          >
+            <FiEdit2 /> Edit Group
+          </Link>
+
           <button
             type="button"
             onClick={() => setShowShareModal(true)}
@@ -238,7 +255,7 @@ const FlashcardDetails = () => {
         </div>
       </div>
 
-      {/* Share Modal */}
+      {/* Share Modal Dialog */}
       {showShareModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full shadow-xl border border-gray-200 dark:border-gray-700">
