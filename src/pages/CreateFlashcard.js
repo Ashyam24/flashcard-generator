@@ -133,79 +133,89 @@ const CreateFlashcard = () => {
                     {values.terms.map((term, index) => {
                       const fileInputId = `termImage-${index}`;
                       return (
-                        <div key={index} className="flex flex-col md:flex-row items-start md:items-center gap-4 pb-4 border-b border-gray-100 dark:border-gray-700 last:border-b-0">
+                        <div 
+                          key={index} 
+                          className="flex items-start gap-4 pb-6 border-b border-gray-100 dark:border-gray-700 last:border-b-0"
+                        >
                           {/* Number Badge */}
-                          <div className="w-8 h-8 rounded-full bg-red-500 text-white font-semibold flex items-center justify-center shrink-0">
+                          <div className="w-8 h-8 rounded-full bg-red-500 text-white font-semibold flex items-center justify-center shrink-0 mt-6">
                             {index + 1}
                           </div>
 
-                          {/* Term Name */}
-                          <div className="flex-1 w-full">
-                            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">
-                              Enter Term*
-                            </label>
-                            <Field
-                              type="text"
-                              name={`terms.${index}.termName`}
-                              placeholder="Enter Term"
-                              className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 outline-none"
-                            />
-                            <ErrorMessage name={`terms.${index}.termName`} component="div" className="text-red-500 text-xs mt-1" />
-                          </div>
+                          {/* Term Fields Grid */}
+                          <div className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
+                            
+                            {/* Term Name (4 columns) */}
+                            <div className="md:col-span-4">
+                              <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">
+                                Enter Term*
+                              </label>
+                              <Field
+                                type="text"
+                                name={`terms.${index}.termName`}
+                                placeholder="Enter Term Name"
+                                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 outline-none"
+                              />
+                              <ErrorMessage name={`terms.${index}.termName`} component="div" className="text-red-500 text-xs mt-1" />
+                            </div>
 
-                          {/* Definition */}
-                          <div className="flex-1 w-full">
-                            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">
-                              Enter Definition*
-                            </label>
-                            <Field
-                              as="textarea"
-                              rows="1"
-                              name={`terms.${index}.definition`}
-                              placeholder="Enter Definition"
-                              className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 outline-none resize-none"
-                            />
-                            <ErrorMessage name={`terms.${index}.definition`} component="div" className="text-red-500 text-xs mt-1" />
-                          </div>
+                            {/* Definition - Big Box (5 columns) */}
+                            <div className="md:col-span-5">
+                              <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">
+                                Enter Definition*
+                              </label>
+                              <Field
+                                as="textarea"
+                                rows="4"
+                                name={`terms.${index}.definition`}
+                                placeholder="Enter detailed definition or explanation..."
+                                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 outline-none leading-relaxed"
+                              />
+                              <ErrorMessage name={`terms.${index}.definition`} component="div" className="text-red-500 text-xs mt-1" />
+                            </div>
 
-                          {/* Select Image Button / Preview */}
-                          <div className="shrink-0 flex items-center gap-2">
-                            <input
-                              type="file"
-                              id={fileInputId}
-                              className="hidden"
-                              accept="image/*"
-                              onChange={(e) => handleFileUpload(e, setFieldValue, `terms.${index}.termImage`)}
-                            />
+                            {/* Select Image & Actions (3 columns) */}
+                            <div className="md:col-span-3 flex items-start gap-2 pt-6">
+                              <input
+                                type="file"
+                                id={fileInputId}
+                                className="hidden"
+                                accept="image/*"
+                                onChange={(e) => handleFileUpload(e, setFieldValue, `terms.${index}.termImage`)}
+                              />
 
-                            {term.termImage ? (
-                              <div className="relative w-20 h-12 rounded-lg overflow-hidden border border-gray-300">
-                                <img src={term.termImage} alt="Term preview" className="w-full h-full object-cover" />
+                              {term.termImage ? (
+                                <div className="relative w-28 h-20 rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600 shrink-0">
+                                  <img src={term.termImage} alt="Term preview" className="w-full h-full object-cover" />
+                                </div>
+                              ) : (
+                                <label
+                                  htmlFor={fileInputId}
+                                  className="cursor-pointer px-4 py-2.5 text-sm font-medium border border-blue-500 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-gray-700 transition shrink-0 whitespace-nowrap"
+                                >
+                                  Select Image
+                                </label>
+                              )}
+
+                              <div className="flex flex-col gap-1">
+                                {term.termImage && (
+                                  <label htmlFor={fileInputId} className="cursor-pointer text-blue-500 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition">
+                                    <FiEdit2 />
+                                  </label>
+                                )}
+
+                                {values.terms.length > 1 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => remove(index)}
+                                    className="text-gray-400 hover:text-red-500 p-2 transition rounded"
+                                  >
+                                    <FiTrash2 />
+                                  </button>
+                                )}
                               </div>
-                            ) : (
-                              <label
-                                htmlFor={fileInputId}
-                                className="cursor-pointer px-4 py-2 text-sm font-medium border border-blue-500 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-gray-700 transition"
-                              >
-                                Select Image
-                              </label>
-                            )}
+                            </div>
 
-                            {term.termImage && (
-                              <label htmlFor={fileInputId} className="cursor-pointer text-blue-500 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
-                                <FiEdit2 />
-                              </label>
-                            )}
-
-                            {values.terms.length > 1 && (
-                              <button
-                                type="button"
-                                onClick={() => remove(index)}
-                                className="text-gray-400 hover:text-red-500 p-2 transition"
-                              >
-                                <FiTrash2 />
-                              </button>
-                            )}
                           </div>
                         </div>
                       );
@@ -214,7 +224,7 @@ const CreateFlashcard = () => {
                     <button
                       type="button"
                       onClick={() => push({ termName: '', definition: '', termImage: '' })}
-                      className="text-blue-600 dark:text-blue-400 font-semibold text-sm hover:underline"
+                      className="text-blue-600 dark:text-blue-400 font-semibold text-sm hover:underline inline-flex items-center gap-1"
                     >
                       + Add more
                     </button>
@@ -227,7 +237,7 @@ const CreateFlashcard = () => {
             <div className="flex justify-center pt-4">
               <button
                 type="submit"
-                className="bg-red-600 hover:bg-red-700 text-white font-semibold px-12 py-3 rounded-lg shadow transition"
+                className="bg-red-600 hover:bg-red-700 text-white font-semibold px-14 py-3 rounded-lg shadow-md transition"
               >
                 Create
               </button>
