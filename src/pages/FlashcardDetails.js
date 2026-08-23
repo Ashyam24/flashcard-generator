@@ -32,7 +32,7 @@ const FlashcardDetails = () => {
   // Fallback view when group ID does not exist in store
   if (!currentGroup) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-16 text-center">
+      <div className="max-w-4xl mx-auto px-4 py-16 text-center print:hidden">
         <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-4">Flashcard Group Not Found</h2>
         <Link to="/my-flashcards" className="text-red-500 hover:underline font-medium">
           ← Back to My Flashcards
@@ -109,18 +109,22 @@ const FlashcardDetails = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8" ref={printRef}>
-      {/* Top Breadcrumb & Group Header */}
-      <div className="mb-6">
-        <Link to="/my-flashcards" className="inline-flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 mb-4 transition">
+    <div className="max-w-6xl mx-auto px-4 py-8 print:py-2 print:px-0" ref={printRef}>
+      
+      {/* Top Header: Breadcrumb & Group Info */}
+      <div className="mb-6 print:mb-4">
+        <Link 
+          to="/my-flashcards" 
+          className="inline-flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 mb-4 transition print:hidden"
+        >
           <FiArrowLeft /> Back to My Flashcards
         </Link>
-        <div className="flex items-start justify-between flex-wrap gap-4">
+        <div className="flex items-start justify-between flex-wrap gap-4 border-b border-gray-100 dark:border-gray-700 pb-4 print:border-gray-300">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white print:text-black flex items-center gap-3">
               {currentGroup.groupName}
             </h1>
-            <p className="text-gray-600 dark:text-gray-300 mt-2 max-w-3xl leading-relaxed">
+            <p className="text-gray-600 dark:text-gray-300 print:text-gray-700 mt-2 max-w-3xl leading-relaxed">
               {currentGroup.description}
             </p>
           </div>
@@ -128,14 +132,14 @@ const FlashcardDetails = () => {
             <img 
               src={currentGroup.groupImage} 
               alt={currentGroup.groupName} 
-              className="w-16 h-16 rounded-xl object-cover border border-gray-200 dark:border-gray-700 shadow-sm"
+              className="w-16 h-16 rounded-xl object-cover border border-gray-200 dark:border-gray-700 shadow-sm print:hidden"
             />
           )}
         </div>
       </div>
 
-      {/* Main Grid: Sidebar (Left) | Viewer (Center) | Actions (Right) */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      {/* 1. SCREEN VIEW (Hidden when printing) */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 print:hidden">
         
         {/* Left Column: Term Selection Sidebar */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 h-fit">
@@ -166,7 +170,7 @@ const FlashcardDetails = () => {
         <div className="lg:col-span-2 space-y-4">
           <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 min-h-[380px] flex flex-col justify-between">
             <div>
-              {/* Term Image rendering */}
+              {/* Term Image */}
               {activeTerm.termImage && (
                 <div className="mb-4 w-full h-56 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
                   <img
@@ -184,7 +188,7 @@ const FlashcardDetails = () => {
                 {activeTerm.definition}
               </p>
 
-              {/* AI Study Assistant Output Card */}
+              {/* AI Assistant Card */}
               {isAiSummarized && aiSummary && (
                 <div className="mt-6 p-4 rounded-xl bg-gradient-to-r from-red-50 to-orange-50 dark:from-gray-700 dark:to-gray-700 border border-red-200 dark:border-gray-600">
                   <div className="flex items-center gap-2 text-red-600 dark:text-red-400 font-bold text-sm mb-2">
@@ -198,7 +202,7 @@ const FlashcardDetails = () => {
               )}
             </div>
 
-            {/* AI Action Trigger & Next/Prev Controls */}
+            {/* AI Assistant Button & Controls */}
             <div className="pt-6 mt-6 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between gap-2 flex-wrap">
               <button
                 type="button"
@@ -231,9 +235,8 @@ const FlashcardDetails = () => {
           </div>
         </div>
 
-        {/* Right Column: Interactive Actions Sidebar */}
+        {/* Right Column: Actions Sidebar */}
         <div className="space-y-3">
-          {/* Edit Group link to load data into CreateFlashcard */}
           <Link
             to={`/edit/${currentGroup.id}`}
             className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition font-medium text-center"
@@ -267,9 +270,34 @@ const FlashcardDetails = () => {
         </div>
       </div>
 
+      {/* 2. PRINT-ONLY VIEW (Automatically active when clicking 'Print Cards') */}
+      <div className="hidden print:block space-y-4">
+        <h2 className="text-lg font-bold text-gray-800 border-b pb-2">All Terms & Definitions</h2>
+        <div className="space-y-4">
+          {currentGroup.terms?.map((term, index) => (
+            <div key={index} className="p-4 border border-gray-300 rounded-lg break-inside-avoid">
+              <div className="flex items-start gap-4">
+                <span className="font-bold text-gray-900 w-8">{index + 1}.</span>
+                <div className="flex-1">
+                  <h3 className="font-bold text-gray-900 text-base mb-1">{term.termName}</h3>
+                  <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">{term.definition}</p>
+                </div>
+                {term.termImage && (
+                  <img 
+                    src={term.termImage} 
+                    alt={term.termName} 
+                    className="w-24 h-24 object-cover rounded border border-gray-200 shrink-0" 
+                  />
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Share Modal Dialog */}
       {showShareModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 print:hidden">
           <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full shadow-xl border border-gray-200 dark:border-gray-700">
             <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Share Flashcard Link</h3>
             <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
