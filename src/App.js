@@ -12,19 +12,19 @@ function App() {
         <Navbar />
         <main className="container mx-auto px-4 py-6">
           <Routes>
-            {/* Default Route redirects to Create page */}
-            <Route path="/" element={<Navigate to="/create" replace />} />
-            
-            {/* Core Routes */}
+            {/* Landing & Creation */}
+            <Route path="/" element={<CreateFlashcard />} />
             <Route path="/create" element={<CreateFlashcard />} />
+            
+            {/* List & Details */}
             <Route path="/my-flashcards" element={<MyFlashcards />} />
             <Route path="/flashcard-details/:id" element={<FlashcardDetails />} />
             
-            {/* Edit Route: mounts CreateFlashcard with the group ID */}
+            {/* Dedicated Edit Route */}
             <Route path="/edit/:id" element={<CreateFlashcard />} />
 
-            {/* Fallback 404 handler */}
-            <Route path="*" element={<Navigate to="/create" replace />} />
+            {/* Fallback Catch-all */}
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
       </div>
