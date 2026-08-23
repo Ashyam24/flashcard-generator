@@ -1,35 +1,46 @@
 import { createSlice } from '@reduxjs/toolkit';
 
-// Helper function to safely fetch initial data from local storage
-const loadCardsFromLocalStorage = () => {
+// Safely retrieve persisted flashcards from browser localStorage on app initialization
+const loadFromLocalStorage = () => {
   try {
-    const savedCards = localStorage.getItem('flashcards');
-    return savedCards ? JSON.parse(savedCards) : [];
+    const saved = localStorage.getItem('flashcards');
+    return saved ? JSON.parse(saved) : [];
   } catch (error) {
-    console.error("Failed to load cards from localStorage:", error);
+    console.error('Error reading localStorage', error);
     return [];
   }
 };
 
 const initialState = {
-  cards: loadCardsFromLocalStorage(),
+  cards: loadFromLocalStorage(),
 };
 
 const flashcardSlice = createSlice({
   name: 'flashcards',
   initialState,
   reducers: {
+    // Action to create and persist a brand new flashcard group
     addFlashcard: (state, action) => {
       state.cards.push(action.payload);
-      // Urgently sync with local storage right as a card is added
       localStorage.setItem('flashcards', JSON.stringify(state.cards));
     },
+
+    // Action to find an existing flashcard group by ID and update its contents
+    updateFlashcard: (state, action) => {
+      const index = state.cards.findIndex((c) => c.id === action.payload.id);
+      if (index !== -1) {
+        state.cards[index] = action.payload;
+        localStorage.setItem('flashcards', JSON.stringify(state.cards));
+      }
+    },
+
+    // Action to remove a flashcard group by ID from both global state and localStorage
     deleteFlashcard: (state, action) => {
-      state.cards = state.cards.filter(card => card.id !== action.payload);
+      state.cards = state.cards.filter((card) => card.id !== action.payload);
       localStorage.setItem('flashcards', JSON.stringify(state.cards));
-    }
+    },
   },
 });
 
-export const { addFlashcard, deleteFlashcard } = flashcardSlice.actions;
+export const { addFlashcard, updateFlashcard, deleteFlashcard } = flashcardSlice.actions;
 export default flashcardSlice.reducer;
