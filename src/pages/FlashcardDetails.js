@@ -17,19 +17,19 @@ import {
 const FlashcardDetails = () => {
   const { id } = useParams();
   
-  // Extract flashcard groups from the global Redux store
+  // Extract flashcard groups from global Redux store
   const cards = useSelector((state) => state.flashcards.cards);
   const currentGroup = cards.find((group) => group.id === id);
 
-  // Local component states for UI interaction & active card indexing
+  // Local state management for UI and active flashcard term indexing
   const [activeTermIndex, setActiveTermIndex] = useState(0);
   const [showShareModal, setShowShareModal] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isAiSummarized, setIsAiSummarized] = useState(false);
-  const [aiSummary, setAiSummary] = useState('');
+  const [aiSummary, setAiSummary] = useState(null);
   const printRef = useRef(null);
 
-  // Fallback view when group ID does not match any stored records
+  // Fallback view when group ID does not exist in store
   if (!currentGroup) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-16 text-center">
@@ -65,17 +65,29 @@ const FlashcardDetails = () => {
     setTimeout(() => setCopied(false), 2500);
   };
 
-  // Print triggering handler
+  // System print trigger
   const handlePrint = () => {
     window.print();
   };
 
-  // Export current flashcard group to a downloadable JSON file
+  // Export current flashcard group to a human-readable text file (.txt)
   const handleDownload = () => {
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(currentGroup, null, 2));
+    let content = `========================================\n`;
+    content += `FLASHCARD GROUP: ${currentGroup.groupName}\n`;
+    content += `DESCRIPTION: ${currentGroup.description}\n`;
+    content += `TOTAL TERMS: ${currentGroup.terms?.length || 0}\n`;
+    content += `========================================\n\n`;
+
+    currentGroup.terms?.forEach((term, index) => {
+      content += `[TERM ${index + 1}]: ${term.termName}\n`;
+      content += `[DEFINITION]: ${term.definition}\n`;
+      content += `----------------------------------------\n`;
+    });
+
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
     const downloadAnchor = document.createElement('a');
-    downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `${currentGroup.groupName.replace(/\s+/g, '_')}_flashcards.json`);
+    downloadAnchor.href = URL.createObjectURL(blob);
+    downloadAnchor.download = `${currentGroup.groupName.replace(/\s+/g, '_')}_flashcards.txt`;
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
@@ -84,14 +96,14 @@ const FlashcardDetails = () => {
   // Pagination navigation controls
   const handleNext = () => {
     if (activeTermIndex < currentGroup.terms.length - 1) {
-      setActiveTermIndex(prev => prev + 1);
+      setActiveTermIndex((prev) => prev + 1);
       setIsAiSummarized(false);
     }
   };
 
   const handlePrev = () => {
     if (activeTermIndex > 0) {
-      setActiveTermIndex(prev => prev - 1);
+      setActiveTermIndex((prev) => prev - 1);
       setIsAiSummarized(false);
     }
   };
@@ -122,7 +134,7 @@ const FlashcardDetails = () => {
         </div>
       </div>
 
-      {/* Main Grid: Sidebar (Left) | Viewer (Center) | Toolbar (Right) */}
+      {/* Main Grid: Sidebar (Left) | Viewer (Center) | Actions (Right) */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         
         {/* Left Column: Term Selection Sidebar */}
@@ -154,7 +166,7 @@ const FlashcardDetails = () => {
         <div className="lg:col-span-2 space-y-4">
           <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 min-h-[380px] flex flex-col justify-between">
             <div>
-              {/* Optional Term Image Rendering */}
+              {/* Term Image rendering */}
               {activeTerm.termImage && (
                 <div className="mb-4 w-full h-56 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
                   <img
@@ -174,7 +186,7 @@ const FlashcardDetails = () => {
 
               {/* AI Study Assistant Output Card */}
               {isAiSummarized && aiSummary && (
-                <div className="mt-6 p-4 rounded-xl bg-gradient-to-r from-red-50 to-orange-50 dark:from-gray-700 dark:to-gray-700 border border-red-200 dark:border-gray-600 animate-fadeIn">
+                <div className="mt-6 p-4 rounded-xl bg-gradient-to-r from-red-50 to-orange-50 dark:from-gray-700 dark:to-gray-700 border border-red-200 dark:border-gray-600">
                   <div className="flex items-center gap-2 text-red-600 dark:text-red-400 font-bold text-sm mb-2">
                     <FiCpu /> AI Summary & Key Takeaway
                   </div>
@@ -242,7 +254,7 @@ const FlashcardDetails = () => {
             onClick={handleDownload}
             className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition font-medium"
           >
-            <FiDownload /> Download Data
+            <FiDownload /> Download Cards (.txt)
           </button>
 
           <button
