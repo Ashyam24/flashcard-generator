@@ -6,7 +6,6 @@ import * as Yup from 'yup';
 import { FiUpload, FiTrash2, FiPlus, FiImage, FiEdit2 } from 'react-icons/fi';
 import { addFlashcard, updateFlashcard } from '../redux/flashcardsSlice';
 
-// Schema validation rules for group metadata and dynamic terms array
 const FlashcardSchema = Yup.object().shape({
   groupName: Yup.string()
     .min(3, 'Group name must be at least 3 characters')
@@ -34,42 +33,35 @@ const CreateFlashcard = () => {
   const dispatch = useDispatch();
   const groupImageInputRef = useRef(null);
 
-  // Check if we are currently editing an existing deck
   const isEditMode = Boolean(id);
-  const cards = useSelector((state) => state.flashcards.cards);
+  const cards = useSelector((state) => state.flashcards?.cards || []);
   const existingGroup = cards.find((c) => c.id === id);
 
   const [groupImage, setGroupImage] = useState(null);
-
-  // Default empty form values for create mode
-  const defaultInitialValues = {
+  const [initialValues, setInitialValues] = useState({
     groupName: '',
     description: '',
     terms: [{ termName: '', definition: '', termImage: null }],
-  };
+  });
 
-  const [initialValues, setInitialValues] = useState(defaultInitialValues);
-
-  // Re-hydrate form state when accessing /edit/:id
   useEffect(() => {
     if (isEditMode && existingGroup) {
       setInitialValues({
         groupName: existingGroup.groupName || '',
         description: existingGroup.description || '',
-        terms: existingGroup.terms && existingGroup.terms.length > 0 
-          ? existingGroup.terms 
-          : [{ termName: '', definition: '', termImage: null }],
+        terms:
+          existingGroup.terms && existingGroup.terms.length > 0
+            ? existingGroup.terms
+            : [{ termName: '', definition: '', termImage: null }],
       });
       setGroupImage(existingGroup.groupImage || null);
     }
   }, [isEditMode, existingGroup]);
 
-  // Convert uploaded image file into base64 string for persistent offline storage
   const handleImageUpload = (e, callback) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Reject files larger than 2MB to preserve localStorage limits
     if (file.size > 2 * 1024 * 1024) {
       alert('Please upload an image smaller than 2MB.');
       return;
@@ -124,7 +116,6 @@ const CreateFlashcard = () => {
       >
         {({ values, setFieldValue }) => (
           <Form className="space-y-6">
-            {/* Top Card: Group Metadata */}
             <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
                 <div className="md:col-span-2 space-y-4">
@@ -156,7 +147,6 @@ const CreateFlashcard = () => {
                   </div>
                 </div>
 
-                {/* Group Thumbnail Upload */}
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
                     Group Cover Image
@@ -193,7 +183,6 @@ const CreateFlashcard = () => {
               </div>
             </div>
 
-            {/* Bottom Card: Dynamic Terms Array */}
             <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
               <h2 className="text-base font-bold text-gray-800 dark:text-white mb-4">
                 Flashcard Terms & Definitions
@@ -247,7 +236,6 @@ const CreateFlashcard = () => {
                           />
                         </div>
 
-                        {/* Term Image Upload & Row Actions */}
                         <div className="md:col-span-2 flex items-center gap-2 md:pt-6 justify-end">
                           <label className="cursor-pointer p-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition" title="Attach image">
                             <FiImage className="w-4 h-4" />
@@ -295,7 +283,6 @@ const CreateFlashcard = () => {
               </FieldArray>
             </div>
 
-            {/* Form Submit Action */}
             <div className="flex justify-center pt-2">
               <button
                 type="submit"
