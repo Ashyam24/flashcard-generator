@@ -3,9 +3,10 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { Formik, Form, Field, FieldArray, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
-import { FiUpload, FiTrash2, FiPlus, FiImage, FiEdit2 } from 'react-icons/fi';
+import { FiUpload, FiTrash2, FiPlus, FiImage, FiEdit2, FiCheck } from 'react-icons/fi';
 import { addFlashcard, updateFlashcard } from '../redux/flashcardsSlice';
 
+// Schema validation rules enforcing required fields and character thresholds
 const FlashcardSchema = Yup.object().shape({
   groupName: Yup.string()
     .min(3, 'Group name must be at least 3 characters')
@@ -44,6 +45,7 @@ const CreateFlashcard = () => {
     terms: [{ termName: '', definition: '', termImage: null }],
   });
 
+  // Re-populate form inputs if accessing in Edit mode
   useEffect(() => {
     if (isEditMode && existingGroup) {
       setInitialValues({
@@ -58,6 +60,7 @@ const CreateFlashcard = () => {
     }
   }, [isEditMode, existingGroup]);
 
+  // Convert uploaded image into base64 string for storage
   const handleImageUpload = (e, callback) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -116,16 +119,23 @@ const CreateFlashcard = () => {
       >
         {({ values, setFieldValue }) => (
           <Form className="space-y-6">
+            {/* Group Details Card */}
             <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
                 <div className="md:col-span-2 space-y-4">
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                      Create Group*
-                    </label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                        Create Group*
+                      </label>
+                      <span className="text-[11px] text-gray-400">
+                        {values.groupName?.length || 0}/50
+                      </span>
+                    </div>
                     <Field
                       name="groupName"
                       type="text"
+                      maxLength={50}
                       placeholder="e.g., Computer Science Terms"
                       className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 outline-none transition"
                     />
@@ -133,12 +143,18 @@ const CreateFlashcard = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                      Add Description*
-                    </label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                        Add Description*
+                      </label>
+                      <span className="text-[11px] text-gray-400">
+                        {values.description?.length || 0}/300
+                      </span>
+                    </div>
                     <Field
                       as="textarea"
                       rows="3"
+                      maxLength={300}
                       name="description"
                       placeholder="Describe the purpose or topic of this deck..."
                       className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 outline-none transition resize-none"
@@ -147,6 +163,7 @@ const CreateFlashcard = () => {
                   </div>
                 </div>
 
+                {/* Group Cover Image Upload */}
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
                     Group Cover Image
@@ -183,6 +200,7 @@ const CreateFlashcard = () => {
               </div>
             </div>
 
+            {/* Terms & Definitions Dynamic List */}
             <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
               <h2 className="text-base font-bold text-gray-800 dark:text-white mb-4">
                 Flashcard Terms & Definitions
@@ -236,8 +254,12 @@ const CreateFlashcard = () => {
                           />
                         </div>
 
+                        {/* Image Upload & Action Buttons */}
                         <div className="md:col-span-2 flex items-center gap-2 md:pt-6 justify-end">
-                          <label className="cursor-pointer p-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition" title="Attach image">
+                          <label
+                            className="cursor-pointer p-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition flex items-center gap-1 text-xs"
+                            title="Attach image"
+                          >
                             <FiImage className="w-4 h-4" />
                             <input
                               type="file"
@@ -252,8 +274,8 @@ const CreateFlashcard = () => {
                           </label>
 
                           {term.termImage && (
-                            <span className="text-xs text-green-600 dark:text-green-400 font-medium">
-                              Added
+                            <span className="text-xs text-green-600 dark:text-green-400 font-medium flex items-center gap-0.5">
+                              <FiCheck className="w-3.5 h-3.5" /> Added
                             </span>
                           )}
 
@@ -283,6 +305,7 @@ const CreateFlashcard = () => {
               </FieldArray>
             </div>
 
+            {/* Submission Button */}
             <div className="flex justify-center pt-2">
               <button
                 type="submit"
