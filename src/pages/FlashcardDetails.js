@@ -8,11 +8,9 @@ import {
   FiPrinter, 
   FiCopy, 
   FiCheck, 
-  FiCpu,
-  FiChevronLeft,
-  FiChevronRight,
-  FiEdit2,
-  FiHelpCircle
+  FiChevronLeft, 
+  FiChevronRight, 
+  FiEdit2 
 } from 'react-icons/fi';
 
 const FlashcardDetails = () => {
@@ -26,8 +24,6 @@ const FlashcardDetails = () => {
   const [activeTermIndex, setActiveTermIndex] = useState(0);
   const [showShareModal, setShowShareModal] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [isAiSummarized, setIsAiSummarized] = useState(false);
-  const [aiSummary, setAiSummary] = useState(null);
   const printRef = useRef(null);
 
   // Fallback view when group ID does not exist in store
@@ -43,48 +39,6 @@ const FlashcardDetails = () => {
   }
 
   const activeTerm = currentGroup.terms?.[activeTermIndex] || {};
-
-  // Smart Study Engine: Intelligently distills concepts, extracts examples, and creates recall questions
-  const handleAiSummarize = () => {
-    if (!activeTerm.definition) return;
-    setIsAiSummarized(true);
-
-    const term = activeTerm.termName.trim();
-    const rawText = activeTerm.definition.trim();
-
-    // 1. Detect Examples / Case Context (such as, for example, e.g., including, like)
-    const exampleRegex = /(?:such as|for example|e\.g\.|including|like|instance of)\s+([^.]+)/i;
-    const exampleMatch = rawText.match(exampleRegex);
-
-    // 2. Extract Core Concept by removing example clauses and leading determiners
-    let cleanCore = rawText
-      .replace(/(?:,\s*)?(?:such as|for example|e\.g\.|including|like)\s+[^.]+/i, '')
-      .replace(/^An?\s+/i, '')
-      .trim();
-    if (!cleanCore.endsWith('.')) cleanCore += '.';
-
-    // 3. Extract Memory Hook Keywords (distinctive words > 5 letters)
-    const words = rawText
-      .replace(/[^a-zA-Z\s]/g, '')
-      .split(/\s+/)
-      .filter(
-        (w) =>
-          w.length > 5 &&
-          !term.toLowerCase().includes(w.toLowerCase()) &&
-          !['because', 'through', 'between', 'another', 'called', 'around'].includes(w.toLowerCase())
-      );
-    const uniqueKeywords = [...new Set(words)].slice(0, 3).join(', ');
-
-    // 4. Formulate Smart Breakdown Object
-    setAiSummary({
-      coreConcept: cleanCore.charAt(0).toUpperCase() + cleanCore.slice(1),
-      keyTakeaway: exampleMatch
-        ? `Example: ${exampleMatch[1].trim()}.`
-        : `Key Focus: Pay attention to the primary role of ${term} in this context.`,
-      recallQuestion: `What defines or characterizes ${term}?`,
-      memoryHook: uniqueKeywords ? `Anchor keywords: ${uniqueKeywords}` : null,
-    });
-  };
 
   // Clipboard share handler
   const handleCopyLink = () => {
@@ -125,14 +79,12 @@ const FlashcardDetails = () => {
   const handleNext = () => {
     if (activeTermIndex < currentGroup.terms.length - 1) {
       setActiveTermIndex((prev) => prev + 1);
-      setIsAiSummarized(false);
     }
   };
 
   const handlePrev = () => {
     if (activeTermIndex > 0) {
       setActiveTermIndex((prev) => prev - 1);
-      setIsAiSummarized(false);
     }
   };
 
@@ -178,10 +130,7 @@ const FlashcardDetails = () => {
             {currentGroup.terms?.map((term, index) => (
               <button
                 key={index}
-                onClick={() => {
-                  setActiveTermIndex(index);
-                  setIsAiSummarized(false);
-                }}
+                onClick={() => setActiveTermIndex(index)}
                 className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition flex items-center justify-between ${
                   activeTermIndex === index
                     ? 'bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 font-bold border-l-4 border-red-500'
@@ -212,79 +161,32 @@ const FlashcardDetails = () => {
               <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
                 {activeTerm.termName}
               </h3>
-              <p className="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
+              <p className="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap text-base">
                 {activeTerm.definition}
               </p>
-
-              {/* Enhanced Smart Breakdown Card */}
-              {isAiSummarized && aiSummary && (
-                <div className="mt-6 p-5 rounded-xl bg-gradient-to-br from-red-50 to-orange-50 dark:from-gray-700/80 dark:to-gray-800/80 border border-red-200 dark:border-gray-600 shadow-sm space-y-3">
-                  <div className="flex items-center justify-between border-b border-red-100 dark:border-gray-600 pb-2">
-                    <span className="flex items-center gap-2 text-red-600 dark:text-red-400 font-bold text-xs uppercase tracking-wide">
-                      <FiCpu className="w-4 h-4" /> Smart Study Breakdown
-                    </span>
-                    <span className="text-[10px] bg-red-100 dark:bg-gray-600 text-red-700 dark:text-red-300 font-semibold px-2 py-0.5 rounded-full">
-                      Active Recall
-                    </span>
-                  </div>
-
-                  <div className="text-xs text-gray-800 dark:text-gray-200 space-y-2">
-                    <div>
-                      <strong className="text-gray-900 dark:text-white block font-semibold mb-0.5">💡 Core Concept:</strong>
-                      <p className="leading-relaxed">{aiSummary.coreConcept}</p>
-                    </div>
-
-                    <div>
-                      <strong className="text-gray-900 dark:text-white block font-semibold mb-0.5">📌 Key Takeaway:</strong>
-                      <p className="leading-relaxed">{aiSummary.keyTakeaway}</p>
-                    </div>
-
-                    <div>
-                      <strong className="text-gray-900 dark:text-white flex items-center gap-1 font-semibold mb-0.5">
-                        <FiHelpCircle className="text-red-500" /> Self-Quiz Question:
-                      </strong>
-                      <p className="italic text-gray-700 dark:text-gray-300">{aiSummary.recallQuestion}</p>
-                    </div>
-
-                    {aiSummary.memoryHook && (
-                      <div className="pt-1 text-[11px] text-gray-500 dark:text-gray-400 border-t border-red-100 dark:border-gray-600">
-                        🧠 {aiSummary.memoryHook}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
             </div>
 
-            {/* AI Assistant Button & Controls */}
-            <div className="pt-6 mt-6 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between gap-2 flex-wrap">
+            {/* Pagination Controls */}
+            <div className="pt-6 mt-6 border-t border-gray-100 dark:border-gray-700 flex items-center justify-center gap-4">
               <button
-                type="button"
-                onClick={handleAiSummarize}
-                className="flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-red-600 dark:text-red-400 bg-red-50 dark:bg-gray-700 rounded-lg hover:bg-red-100 dark:hover:bg-gray-600 transition"
+                onClick={handlePrev}
+                disabled={activeTermIndex === 0}
+                className="p-2.5 rounded-lg border border-gray-200 dark:border-gray-700 disabled:opacity-30 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition"
               >
-                <FiCpu /> Simplify with AI
+                <FiChevronLeft className="w-5 h-5" />
               </button>
-
-              <div className="flex items-center gap-2 text-gray-500 text-sm">
-                <button
-                  onClick={handlePrev}
-                  disabled={activeTermIndex === 0}
-                  className="p-2 rounded-lg border border-gray-200 dark:border-gray-700 disabled:opacity-30 hover:bg-gray-50 dark:hover:bg-gray-700"
-                >
-                  <FiChevronLeft />
-                </button>
-                <span>
-                  {activeTermIndex + 1} / {currentGroup.terms?.length || 1}
-                </span>
-                <button
-                  onClick={handleNext}
-                  disabled={activeTermIndex === (currentGroup.terms?.length || 1) - 1}
-                  className="p-2 rounded-lg border border-gray-200 dark:border-gray-700 disabled:opacity-30 hover:bg-gray-50 dark:hover:bg-gray-700"
-                >
-                  <FiChevronRight />
-                </button>
-              </div>
+              
+              <span className="text-sm font-semibold text-gray-600 dark:text-gray-300">
+                {activeTermIndex + 1} / {currentGroup.terms?.length || 1}
+              </span>
+              
+              <button
+                onClick={handleNext}
+                disabled={activeTermIndex === (currentGroup.terms?.length || 1) - 1}
+                className="p-2.5 rounded-lg border border-gray-200 dark:border-gray-700 disabled:opacity-30 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition"
+              >
+                <FiChevronRight className="w-5 h-5" />
+              </button>
             </div>
           </div>
         </div>
