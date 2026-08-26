@@ -1,323 +1,285 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
+import React, { useRef } from 'react';
 import { Formik, Form, Field, FieldArray, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
-import { FiUpload, FiTrash2, FiPlus, FiImage, FiEdit2, FiCheck } from 'react-icons/fi';
-import { addFlashcard, updateFlashcard } from '../redux/flashcardsSlice';
+import { useDispatch, useSelector } from 'react-redux';
+import { addFlashcard, updateFlashcard } from '../redux/flashcardSlice';
+import { useNavigate, useParams } from 'react-router-dom';
+import { FiTrash2, FiEdit2, FiUploadCloud } from 'react-icons/fi';
 
-// Schema validation rules enforcing required fields and character thresholds
-const FlashcardSchema = Yup.object().shape({
-  groupName: Yup.string()
-    .min(3, 'Group name must be at least 3 characters')
-    .max(50, 'Group name must be under 50 characters')
-    .required('Group name is required'),
-  description: Yup.string()
-    .max(300, 'Description cannot exceed 300 characters')
-    .required('Description is required'),
-  terms: Yup.array()
-    .of(
-      Yup.object().shape({
-        termName: Yup.string().required('Term name is required'),
-        definition: Yup.string()
-          .min(5, 'Definition must be at least 5 characters')
-          .required('Definition is required'),
-        termImage: Yup.string().nullable(),
-      })
-    )
-    .min(1, 'Please add at least one flashcard term'),
+// Yup validation schema: enforces required fields and nested term array structure
+const validationSchema = Yup.object().shape({
+  groupName: Yup.string().required('Group Name is required'),
+  description: Yup.string().required('Description is required'),
+  terms: Yup.array().of(
+    Yup.object().shape({
+      termName: Yup.string().required('Term Name is required'),
+      definition: Yup.string().required('Definition is required'),
+      termImage: Yup.string(),
+    })
+  ),
 });
 
 const CreateFlashcard = () => {
-  const { id } = useParams();
-  const navigate = useNavigate();
+  const { id } = useParams(); // Capture optional group ID for edit mode
   const dispatch = useDispatch();
-  const groupImageInputRef = useRef(null);
+  const navigate = useNavigate();
+  const groupImageRef = useRef(null);
 
-  const isEditMode = Boolean(id);
-  const cards = useSelector((state) => state.flashcards?.cards || []);
-  const existingGroup = cards.find((c) => c.id === id);
+  // Retrieve existing group data if the component is mounted in Edit Mode
+  const cards = useSelector((state) => state.flashcards.cards);
+  const existingCard = id ? cards.find((c) => c.id === id) : null;
+  const isEditing = Boolean(existingCard);
 
-  const [groupImage, setGroupImage] = useState(null);
-  const [initialValues, setInitialValues] = useState({
-    groupName: '',
-    description: '',
-    terms: [{ termName: '', definition: '', termImage: null }],
-  });
+  // Populate initial values dynamically based on create vs edit mode
+  const initialValues = existingCard
+    ? {
+        groupName: existingCard.groupName || '',
+        description: existingCard.description || '',
+        groupImage: existingCard.groupImage || '',
+        terms: existingCard.terms?.length
+          ? existingCard.terms
+          : [{ termName: '', definition: '', termImage: '' }],
+      }
+    : {
+        groupName: '',
+        description: '',
+        groupImage: '',
+        terms: [{ termName: '', definition: '', termImage: '' }],
+      };
 
-  // Re-populate form inputs if accessing in Edit mode
-  useEffect(() => {
-    if (isEditMode && existingGroup) {
-      setInitialValues({
-        groupName: existingGroup.groupName || '',
-        description: existingGroup.description || '',
-        terms:
-          existingGroup.terms && existingGroup.terms.length > 0
-            ? existingGroup.terms
-            : [{ termName: '', definition: '', termImage: null }],
-      });
-      setGroupImage(existingGroup.groupImage || null);
-    }
-  }, [isEditMode, existingGroup]);
-
-  // Convert uploaded image into base64 string for storage
-  const handleImageUpload = (e, callback) => {
+  // Convert binary file uploads into base64 data URLs for localStorage persistence
+  const handleFileUpload = (e, setFieldValue, fieldName) => {
     const file = e.target.files[0];
-    if (!file) return;
-
-    if (file.size > 2 * 1024 * 1024) {
-      alert('Please upload an image smaller than 2MB.');
-      return;
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFieldValue(fieldName, reader.result);
+      };
+      reader.readAsDataURL(file);
     }
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      callback(reader.result);
-    };
-    reader.readAsDataURL(file);
   };
 
+  // Form submission handler: dispatches update or create action accordingly
   const handleSubmit = (values, { resetForm }) => {
-    if (isEditMode) {
-      const updatedData = {
-        ...existingGroup,
-        groupName: values.groupName,
-        description: values.description,
-        groupImage: groupImage,
-        terms: values.terms,
-        updatedAt: new Date().toISOString(),
+    if (isEditing) {
+      const updatedGroup = {
+        ...values,
+        id: existingCard.id,
       };
-      dispatch(updateFlashcard(updatedData));
-      navigate(`/flashcard-details/${id}`);
-    } else {
-      const newFlashcard = {
-        id: Date.now().toString(),
-        groupName: values.groupName,
-        description: values.description,
-        groupImage: groupImage,
-        terms: values.terms,
-        createdAt: new Date().toISOString(),
-      };
-      dispatch(addFlashcard(newFlashcard));
+      dispatch(updateFlashcard(updatedGroup));
       resetForm();
-      setGroupImage(null);
+      navigate(`/flashcard-details/${existingCard.id}`);
+    } else {
+      const newGroup = {
+        id: Date.now().toString(),
+        ...values,
+      };
+      dispatch(addFlashcard(newGroup));
+      resetForm();
       navigate('/my-flashcards');
     }
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-        {isEditMode ? 'Edit Flashcard Group' : 'Create New Flashcard'}
+    <div className="max-w-5xl mx-auto px-4 py-8">
+      <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">
+        {isEditing ? 'Edit Flashcard Group' : 'Create Flashcard'}
       </h1>
 
       <Formik
-        enableReinitialize
         initialValues={initialValues}
-        validationSchema={FlashcardSchema}
+        enableReinitialize={true} // Allows form state to re-sync when existingCard loads
+        validationSchema={validationSchema}
         onSubmit={handleSubmit}
       >
         {({ values, setFieldValue }) => (
           <Form className="space-y-6">
-            {/* Group Details Card */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-                <div className="md:col-span-2 space-y-4">
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
-                        Create Group*
-                      </label>
-                      <span className="text-[11px] text-gray-400">
-                        {values.groupName?.length || 0}/50
-                      </span>
-                    </div>
-                    <Field
-                      name="groupName"
-                      type="text"
-                      maxLength={50}
-                      placeholder="e.g., Computer Science Terms"
-                      className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 outline-none transition"
-                    />
-                    <ErrorMessage name="groupName" component="div" className="text-red-500 text-xs mt-1" />
-                  </div>
-
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
-                        Add Description*
-                      </label>
-                      <span className="text-[11px] text-gray-400">
-                        {values.description?.length || 0}/300
-                      </span>
-                    </div>
-                    <Field
-                      as="textarea"
-                      rows="3"
-                      maxLength={300}
-                      name="description"
-                      placeholder="Describe the purpose or topic of this deck..."
-                      className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 outline-none transition resize-none"
-                    />
-                    <ErrorMessage name="description" component="div" className="text-red-500 text-xs mt-1" />
-                  </div>
-                </div>
-
-                {/* Group Cover Image Upload */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                    Group Cover Image
-                  </label>
-                  <input
-                    type="file"
-                    ref={groupImageInputRef}
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => handleImageUpload(e, (base64) => setGroupImage(base64))}
+            {/* Group Configuration Card */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1">
+                  Create Group*
+                </label>
+                <div className="flex items-center gap-4">
+                  <Field
+                    type="text"
+                    name="groupName"
+                    placeholder="Enter Group Name"
+                    className="w-full max-w-md px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 outline-none"
                   />
-                  {groupImage ? (
-                    <div className="relative group w-full h-32 rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden">
-                      <img src={groupImage} alt="Group Cover" className="w-full h-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={() => setGroupImage(null)}
-                        className="absolute inset-0 bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition text-xs font-semibold"
-                      >
-                        Remove Image
-                      </button>
-                    </div>
-                  ) : (
+                  <div>
+                    {/* Hidden file input triggered programmatically */}
+                    <input
+                      type="file"
+                      ref={groupImageRef}
+                      className="hidden"
+                      accept="image/*"
+                      onChange={(e) => handleFileUpload(e, setFieldValue, 'groupImage')}
+                    />
                     <button
                       type="button"
-                      onClick={() => groupImageInputRef.current?.click()}
-                      className="w-full h-32 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 flex flex-col items-center justify-center text-gray-500 dark:text-gray-400 hover:border-red-500 hover:text-red-500 transition gap-2"
+                      onClick={() => groupImageRef.current.click()}
+                      className="flex items-center gap-2 px-4 py-2 text-sm font-medium border border-blue-500 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-gray-700 transition"
                     >
-                      <FiUpload className="w-6 h-6" />
-                      <span className="text-xs font-medium">Upload Image</span>
+                      <FiUploadCloud /> {values.groupImage ? 'Change Group Image' : 'Upload Image'}
                     </button>
-                  )}
+                  </div>
                 </div>
+                <ErrorMessage name="groupName" component="div" className="text-red-500 text-xs mt-1" />
+              </div>
+
+              {/* Group Image Preview */}
+              {values.groupImage && (
+                <div className="relative w-20 h-20 rounded-lg overflow-hidden border border-gray-200">
+                  <img src={values.groupImage} alt="Group Preview" className="w-full h-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => setFieldValue('groupImage', '')}
+                    className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 text-xs"
+                    title="Remove group image"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1">
+                  Add description
+                </label>
+                <Field
+                  as="textarea"
+                  name="description"
+                  rows="3"
+                  placeholder="Describe the purpose or subject of this flashcard group..."
+                  className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 outline-none"
+                />
+                <ErrorMessage name="description" component="div" className="text-red-500 text-xs mt-1" />
               </div>
             </div>
 
-            {/* Terms & Definitions Dynamic List */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-              <h2 className="text-base font-bold text-gray-800 dark:text-white mb-4">
-                Flashcard Terms & Definitions
-              </h2>
-
+            {/* Dynamic Terms Array Section */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
               <FieldArray name="terms">
                 {({ push, remove }) => (
-                  <div className="space-y-4">
-                    {values.terms.map((term, index) => (
-                      <div
-                        key={index}
-                        className="p-4 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 grid grid-cols-1 md:grid-cols-12 gap-4 items-start"
-                      >
-                        <div className="md:col-span-1 flex items-center justify-center md:pt-3">
-                          <span className="w-7 h-7 rounded-full bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400 font-bold text-xs flex items-center justify-center">
+                  <div className="space-y-6">
+                    {values.terms.map((term, index) => {
+                      const fileInputId = `termImage-${index}`;
+                      return (
+                        <div 
+                          key={index} 
+                          className="flex items-start gap-4 pb-6 border-b border-gray-100 dark:border-gray-700 last:border-b-0"
+                        >
+                          {/* Row Index Indicator */}
+                          <div className="w-8 h-8 rounded-full bg-red-500 text-white font-semibold flex items-center justify-center shrink-0 mt-6">
                             {index + 1}
-                          </span>
+                          </div>
+
+                          {/* Term Form Fields */}
+                          <div className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
+                            
+                            {/* Term Name Input */}
+                            <div className="md:col-span-4">
+                              <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">
+                                Enter Term*
+                              </label>
+                              <Field
+                                type="text"
+                                name={`terms.${index}.termName`}
+                                placeholder="Enter Term Name"
+                                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 outline-none"
+                              />
+                              <ErrorMessage name={`terms.${index}.termName`} component="div" className="text-red-500 text-xs mt-1" />
+                            </div>
+
+                            {/* Definition Multi-line Text Area */}
+                            <div className="md:col-span-5">
+                              <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">
+                                Enter Definition*
+                              </label>
+                              <Field
+                                as="textarea"
+                                rows="4"
+                                name={`terms.${index}.definition`}
+                                placeholder="Enter detailed definition or explanation..."
+                                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 outline-none leading-relaxed"
+                              />
+                              <ErrorMessage name={`terms.${index}.definition`} component="div" className="text-red-500 text-xs mt-1" />
+                            </div>
+
+                            {/* Term Image Upload & Row Controls */}
+                            <div className="md:col-span-3 flex items-start gap-2 pt-6">
+                              <input
+                                type="file"
+                                id={fileInputId}
+                                className="hidden"
+                                accept="image/*"
+                                onChange={(e) => handleFileUpload(e, setFieldValue, `terms.${index}.termImage`)}
+                              />
+
+                              {term.termImage ? (
+                                <div className="relative w-28 h-20 rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600 shrink-0">
+                                  <img src={term.termImage} alt="Term preview" className="w-full h-full object-cover" />
+                                </div>
+                              ) : (
+                                <label
+                                  htmlFor={fileInputId}
+                                  className="cursor-pointer px-4 py-2.5 text-sm font-medium border border-blue-500 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-gray-700 transition shrink-0 whitespace-nowrap"
+                                >
+                                  Select Image
+                                </label>
+                              )}
+
+                              <div className="flex flex-col gap-1">
+                                {term.termImage && (
+                                  <label 
+                                    htmlFor={fileInputId} 
+                                    className="cursor-pointer text-blue-500 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition"
+                                    title="Edit term image"
+                                  >
+                                    <FiEdit2 />
+                                  </label>
+                                )}
+
+                                {/* Only show delete button if there is more than 1 term row */}
+                                {values.terms.length > 1 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => remove(index)}
+                                    className="text-gray-400 hover:text-red-500 p-2 transition rounded"
+                                    title="Delete term"
+                                  >
+                                    <FiTrash2 />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+
+                          </div>
                         </div>
+                      );
+                    })}
 
-                        <div className="md:col-span-4">
-                          <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">
-                            Enter Term*
-                          </label>
-                          <Field
-                            name={`terms.${index}.termName`}
-                            placeholder="e.g., Closure"
-                            className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 outline-none"
-                          />
-                          <ErrorMessage
-                            name={`terms.${index}.termName`}
-                            component="div"
-                            className="text-red-500 text-xs mt-1"
-                          />
-                        </div>
-
-                        <div className="md:col-span-5">
-                          <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">
-                            Enter Definition*
-                          </label>
-                          <Field
-                            as="textarea"
-                            rows="2"
-                            name={`terms.${index}.definition`}
-                            placeholder="Explain the term in detail..."
-                            className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 outline-none resize-none"
-                          />
-                          <ErrorMessage
-                            name={`terms.${index}.definition`}
-                            component="div"
-                            className="text-red-500 text-xs mt-1"
-                          />
-                        </div>
-
-                        {/* Image Upload & Action Buttons */}
-                        <div className="md:col-span-2 flex items-center gap-2 md:pt-6 justify-end">
-                          <label
-                            className="cursor-pointer p-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition flex items-center gap-1 text-xs"
-                            title="Attach image"
-                          >
-                            <FiImage className="w-4 h-4" />
-                            <input
-                              type="file"
-                              accept="image/*"
-                              className="hidden"
-                              onChange={(e) =>
-                                handleImageUpload(e, (base64) =>
-                                  setFieldValue(`terms.${index}.termImage`, base64)
-                                )
-                              }
-                            />
-                          </label>
-
-                          {term.termImage && (
-                            <span className="text-xs text-green-600 dark:text-green-400 font-medium flex items-center gap-0.5">
-                              <FiCheck className="w-3.5 h-3.5" /> Added
-                            </span>
-                          )}
-
-                          {values.terms.length > 1 && (
-                            <button
-                              type="button"
-                              onClick={() => remove(index)}
-                              className="p-2 text-gray-400 hover:text-red-500 transition"
-                              title="Delete term"
-                            >
-                              <FiTrash2 className="w-4 h-4" />
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-
+                    {/* Button to append a new empty term object */}
                     <button
                       type="button"
-                      onClick={() => push({ termName: '', definition: '', termImage: null })}
-                      className="mt-2 inline-flex items-center gap-2 text-sm font-semibold text-red-600 dark:text-red-400 hover:underline"
+                      onClick={() => push({ termName: '', definition: '', termImage: '' })}
+                      className="text-blue-600 dark:text-blue-400 font-semibold text-sm hover:underline inline-flex items-center gap-1"
                     >
-                      <FiPlus /> Add more terms
+                      + Add more
                     </button>
                   </div>
                 )}
               </FieldArray>
             </div>
 
-            {/* Submission Button */}
-            <div className="flex justify-center pt-2">
+            {/* Form Action Submit */}
+            <div className="flex justify-center pt-4">
               <button
                 type="submit"
-                className="px-8 py-3 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 shadow-sm transition flex items-center gap-2 text-sm"
+                className="bg-red-600 hover:bg-red-700 text-white font-semibold px-14 py-3 rounded-lg shadow-md transition"
               >
-                {isEditMode ? (
-                  <>
-                    <FiEdit2 /> Update Flashcard Group
-                  </>
-                ) : (
-                  'Create Flashcard Group'
-                )}
+                {isEditing ? 'Save Changes' : 'Create'}
               </button>
             </div>
           </Form>
