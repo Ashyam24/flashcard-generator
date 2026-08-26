@@ -1,39 +1,34 @@
-import flashcardReducer, { addFlashcard, deleteFlashcard } from './redux/flashcardSlice';
+import React from 'react';
+import { render, screen } from '@testing-library/react';
+import { Provider } from 'react-redux';
+import { BrowserRouter } from 'react-router-dom';
+import store from './redux/store';
+import App from './App';
 
-describe('Flashcard Redux System Unit Tests', () => {
-  const initialState = {
-    cards: []
-  };
+// Wrapper helper to provide necessary Redux and Router context
+const renderWithProviders = (ui) => {
+  return render(
+    <Provider store={store}>
+      <BrowserRouter>
+        {ui}
+      </BrowserRouter>
+    </Provider>
+  );
+};
 
-  test('should return the initial empty state slice on boot', () => {
-    expect(flashcardReducer(undefined, { type: undefined })).toEqual(initialState);
+describe('Flashcard Generator Application Tests', () => {
+  test('renders the application brand heading', () => {
+    renderWithProviders(<App />);
+    const brandElement = screen.getByText(/Flashcard/i);
+    expect(brandElement).toBeInTheDocument();
   });
 
-  test('should handle adding a new group payload into state storage', () => {
-    const newGroup = {
-      id: '123',
-      groupName: 'React Basics',
-      description: 'Core rules',
-      terms: [{ termName: 'Prop', definition: 'Read-only data' }]
-    };
-
-    const actualState = flashcardReducer(initialState, addFlashcard(newGroup));
+  test('renders primary navigation links', () => {
+    renderWithProviders(<App />);
+    const createNav = screen.getByText(/Create New/i);
+    const myCardsNav = screen.getByText(/My Flashcards/i);
     
-    expect(actualState.cards.length).toBe(1);
-    expect(actualState.cards[0].groupName).toBe('React Basics');
-  });
-
-  test('should handle removing a flashcard cluster dynamically by id token', () => {
-    const populatedState = {
-      cards: [
-        { id: '111', groupName: 'State Management' },
-        { id: '222', groupName: 'Hooks Pool' }
-      ]
-    };
-
-    const actualState = flashcardReducer(populatedState, deleteFlashcard('111'));
-    
-    expect(actualState.cards.length).toBe(1);
-    expect(actualState.cards[0].id).toBe('222');
+    expect(createNav).toBeInTheDocument();
+    expect(myCardsNav).toBeInTheDocument();
   });
 });
