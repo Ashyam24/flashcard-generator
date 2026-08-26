@@ -1,70 +1,63 @@
-# Getting Started with Create React App
+# Flashcard Generator
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A lightweight study web application built with React, Redux Toolkit, and Tailwind CSS. It allows students and learners to create custom flashcard decks with terms, detailed definitions, and images, review them interactively, and export or print them for offline study.
 
-## Available Scripts
+Live Application: https://flashcard-generator-gamma-two.vercel.app/
 
-In the project directory, you can run:
+---
 
-### `npm start`
+### Core Features
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- Deck Creation and Formik Validation: Create multi-card decks with group titles, descriptions, and dynamic terms. Inputs are validated in real time using Yup.
+- Image Uploads: Add cover images and term references converted directly to base64 for persistent storage.
+- Full CRUD Support: Create, view, edit existing decks with automatic form rehydration, and delete decks.
+- Local Persistence: State is managed globally via Redux Toolkit and automatically synced with browser localStorage so data stays saved across reloads.
+- Search and Filtering: Real-time case-insensitive search to quickly find decks by title or description.
+- Interactive Study View: Term sidebar selection combined with next and previous carousel controls.
+- Export and Print Tools: Download clean plain-text study summaries or use the print button, which automatically strips web buttons to format a clean study sheet for standard A4 paper.
+- Dark and Light Themes: Built-in theme switch with full support for mobile, tablet, and desktop screens.
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+---
 
-### `npm test`
+### Tech Stack
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+- React 18
+- Redux Toolkit & React-Redux
+- React Router DOM v6
+- Formik & Yup
+- Tailwind CSS
+- React Icons
+- Deployed on Vercel
 
-### `npm run build`
+---
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### Project Structure
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+src/
+├── pages/
+│   ├── CreateFlashcard.js
+│   ├── FlashcardDetails.js
+│   └── MyFlashcards.js
+├── redux/
+│   ├── flashcardsSlice.js
+│   └── store.js
+├── App.js
+├── App.css
+├── index.css
+└── index.js
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+---
 
-### `npm run eject`
+### Local Setup Instructions
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+1. Clone the repository:
+   git clone https://github.com/your-username/flashcard-generator.git
+   cd flashcard-generator
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+2. Install dependencies:
+   npm install
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+3. Run the application:
+   npm start
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+The local development server will start at http://localhost:3000.
