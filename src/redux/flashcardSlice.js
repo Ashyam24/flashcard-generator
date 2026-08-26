@@ -1,11 +1,12 @@
 import { createSlice } from '@reduxjs/toolkit';
 
-// Retrieve saved flashcard decks from localStorage on initial load
+// Read existing flashcards from localStorage on initial boot
 const loadCardsFromStorage = () => {
   try {
     const saved = localStorage.getItem('flashcards');
     return saved ? JSON.parse(saved) : [];
   } catch (err) {
+    console.error('Failed to load flashcards from storage:', err);
     return [];
   }
 };
@@ -16,13 +17,13 @@ const flashcardsSlice = createSlice({
     cards: loadCardsFromStorage(),
   },
   reducers: {
-    // Append a newly created deck and sync to localStorage
+    // Add a newly created flashcard deck to state and sync with storage
     addFlashcard: (state, action) => {
       state.cards.push(action.payload);
       localStorage.setItem('flashcards', JSON.stringify(state.cards));
     },
 
-    // Locate deck by unique ID and overwrite with modified data
+    // Locate deck by id and replace it with updated values from edit mode
     updateFlashcard: (state, action) => {
       const index = state.cards.findIndex((c) => c.id === action.payload.id);
       if (index !== -1) {
@@ -31,7 +32,7 @@ const flashcardsSlice = createSlice({
       }
     },
 
-    // Remove a deck by ID and update storage
+    // Remove a deck by its unique id
     deleteFlashcard: (state, action) => {
       state.cards = state.cards.filter((c) => c.id !== action.payload);
       localStorage.setItem('flashcards', JSON.stringify(state.cards));
