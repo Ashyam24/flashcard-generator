@@ -1,31 +1,29 @@
 import { createSlice } from '@reduxjs/toolkit';
 
-// Safely retrieve persisted flashcards from browser localStorage on app initialization
-const loadFromLocalStorage = () => {
+// Read existing flashcards from localStorage on initial boot
+const loadCardsFromStorage = () => {
   try {
     const saved = localStorage.getItem('flashcards');
     return saved ? JSON.parse(saved) : [];
-  } catch (error) {
-    console.error('Error reading localStorage', error);
+  } catch (err) {
+    console.error('Failed to load flashcards from storage:', err);
     return [];
   }
 };
 
-const initialState = {
-  cards: loadFromLocalStorage(),
-};
-
-const flashcardSlice = createSlice({
+const flashcardsSlice = createSlice({
   name: 'flashcards',
-  initialState,
+  initialState: {
+    cards: loadCardsFromStorage(),
+  },
   reducers: {
-    // Action to create and persist a brand new flashcard group
+    // Add a newly created flashcard deck to state and sync with storage
     addFlashcard: (state, action) => {
       state.cards.push(action.payload);
       localStorage.setItem('flashcards', JSON.stringify(state.cards));
     },
 
-    // Action to find an existing flashcard group by ID and update its contents
+    // Locate deck by id and replace it with updated values from edit mode
     updateFlashcard: (state, action) => {
       const index = state.cards.findIndex((c) => c.id === action.payload.id);
       if (index !== -1) {
@@ -34,13 +32,13 @@ const flashcardSlice = createSlice({
       }
     },
 
-    // Action to remove a flashcard group by ID from both global state and localStorage
+    // Remove a deck by its unique id
     deleteFlashcard: (state, action) => {
-      state.cards = state.cards.filter((card) => card.id !== action.payload);
+      state.cards = state.cards.filter((c) => c.id !== action.payload);
       localStorage.setItem('flashcards', JSON.stringify(state.cards));
     },
   },
 });
 
-export const { addFlashcard, updateFlashcard, deleteFlashcard } = flashcardSlice.actions;
-export default flashcardSlice.reducer;
+export const { addFlashcard, updateFlashcard, deleteFlashcard } = flashcardsSlice.actions;
+export default flashcardsSlice.reducer;
