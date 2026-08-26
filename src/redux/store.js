@@ -1,8 +1,10 @@
 import { configureStore } from '@reduxjs/toolkit';
-import flashcardReducer from './flashcardSlice';
+import flashcardsReducer from './flashcardsSlice';
 
 export const store = configureStore({
   reducer: {
-    flashcards: flashcardReducer,
+    flashcards: flashcardsReducer,
   },
 });
+
+export default store;
