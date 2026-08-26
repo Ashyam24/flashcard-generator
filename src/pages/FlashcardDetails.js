@@ -11,7 +11,8 @@ import {
   FiCpu,
   FiChevronLeft,
   FiChevronRight,
-  FiEdit2
+  FiEdit2,
+  FiHelpCircle
 } from 'react-icons/fi';
 
 const FlashcardDetails = () => {
@@ -43,18 +44,45 @@ const FlashcardDetails = () => {
 
   const activeTerm = currentGroup.terms?.[activeTermIndex] || {};
 
-  // AI Study Assistant: splits definition text to isolate core definitions and takeaways
+  // Smart Study Engine: Intelligently distills concepts, extracts examples, and creates recall questions
   const handleAiSummarize = () => {
     if (!activeTerm.definition) return;
     setIsAiSummarized(true);
 
-    const sentences = activeTerm.definition.split(/(?<=[.?!])\s+/);
-    const coreConcept = sentences[0] || activeTerm.definition;
-    const keyTakeaway = sentences.slice(1).join(' ') || 'Focus on understanding the application and key constraints.';
+    const term = activeTerm.termName.trim();
+    const rawText = activeTerm.definition.trim();
 
+    // 1. Detect Examples / Case Context (such as, for example, e.g., including, like)
+    const exampleRegex = /(?:such as|for example|e\.g\.|including|like|instance of)\s+([^.]+)/i;
+    const exampleMatch = rawText.match(exampleRegex);
+
+    // 2. Extract Core Concept by removing example clauses and leading determiners
+    let cleanCore = rawText
+      .replace(/(?:,\s*)?(?:such as|for example|e\.g\.|including|like)\s+[^.]+/i, '')
+      .replace(/^An?\s+/i, '')
+      .trim();
+    if (!cleanCore.endsWith('.')) cleanCore += '.';
+
+    // 3. Extract Memory Hook Keywords (distinctive words > 5 letters)
+    const words = rawText
+      .replace(/[^a-zA-Z\s]/g, '')
+      .split(/\s+/)
+      .filter(
+        (w) =>
+          w.length > 5 &&
+          !term.toLowerCase().includes(w.toLowerCase()) &&
+          !['because', 'through', 'between', 'another', 'called', 'around'].includes(w.toLowerCase())
+      );
+    const uniqueKeywords = [...new Set(words)].slice(0, 3).join(', ');
+
+    // 4. Formulate Smart Breakdown Object
     setAiSummary({
-      coreConcept,
-      keyTakeaway,
+      coreConcept: cleanCore.charAt(0).toUpperCase() + cleanCore.slice(1),
+      keyTakeaway: exampleMatch
+        ? `Example: ${exampleMatch[1].trim()}.`
+        : `Key Focus: Pay attention to the primary role of ${term} in this context.`,
+      recallQuestion: `What defines or characterizes ${term}?`,
+      memoryHook: uniqueKeywords ? `Anchor keywords: ${uniqueKeywords}` : null,
     });
   };
 
@@ -138,7 +166,7 @@ const FlashcardDetails = () => {
         </div>
       </div>
 
-      {/* 1. SCREEN VIEW (Hidden when printing) */}
+      {/* 1. SCREEN VIEW */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 print:hidden">
         
         {/* Left Column: Term Selection Sidebar */}
@@ -188,15 +216,41 @@ const FlashcardDetails = () => {
                 {activeTerm.definition}
               </p>
 
-              {/* AI Assistant Card */}
+              {/* Enhanced Smart Breakdown Card */}
               {isAiSummarized && aiSummary && (
-                <div className="mt-6 p-4 rounded-xl bg-gradient-to-r from-red-50 to-orange-50 dark:from-gray-700 dark:to-gray-700 border border-red-200 dark:border-gray-600">
-                  <div className="flex items-center gap-2 text-red-600 dark:text-red-400 font-bold text-sm mb-2">
-                    <FiCpu /> AI Summary & Key Takeaway
+                <div className="mt-6 p-5 rounded-xl bg-gradient-to-br from-red-50 to-orange-50 dark:from-gray-700/80 dark:to-gray-800/80 border border-red-200 dark:border-gray-600 shadow-sm space-y-3">
+                  <div className="flex items-center justify-between border-b border-red-100 dark:border-gray-600 pb-2">
+                    <span className="flex items-center gap-2 text-red-600 dark:text-red-400 font-bold text-xs uppercase tracking-wide">
+                      <FiCpu className="w-4 h-4" /> Smart Study Breakdown
+                    </span>
+                    <span className="text-[10px] bg-red-100 dark:bg-gray-600 text-red-700 dark:text-red-300 font-semibold px-2 py-0.5 rounded-full">
+                      Active Recall
+                    </span>
                   </div>
-                  <div className="text-xs text-gray-800 dark:text-gray-200 space-y-1">
-                    <p><strong className="text-gray-900 dark:text-white">Core:</strong> {aiSummary.coreConcept}</p>
-                    <p><strong className="text-gray-900 dark:text-white">Takeaway:</strong> {aiSummary.keyTakeaway}</p>
+
+                  <div className="text-xs text-gray-800 dark:text-gray-200 space-y-2">
+                    <div>
+                      <strong className="text-gray-900 dark:text-white block font-semibold mb-0.5">💡 Core Concept:</strong>
+                      <p className="leading-relaxed">{aiSummary.coreConcept}</p>
+                    </div>
+
+                    <div>
+                      <strong className="text-gray-900 dark:text-white block font-semibold mb-0.5">📌 Key Takeaway:</strong>
+                      <p className="leading-relaxed">{aiSummary.keyTakeaway}</p>
+                    </div>
+
+                    <div>
+                      <strong className="text-gray-900 dark:text-white flex items-center gap-1 font-semibold mb-0.5">
+                        <FiHelpCircle className="text-red-500" /> Self-Quiz Question:
+                      </strong>
+                      <p className="italic text-gray-700 dark:text-gray-300">{aiSummary.recallQuestion}</p>
+                    </div>
+
+                    {aiSummary.memoryHook && (
+                      <div className="pt-1 text-[11px] text-gray-500 dark:text-gray-400 border-t border-red-100 dark:border-gray-600">
+                        🧠 {aiSummary.memoryHook}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -207,7 +261,7 @@ const FlashcardDetails = () => {
               <button
                 type="button"
                 onClick={handleAiSummarize}
-                className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-red-600 dark:text-red-400 bg-red-50 dark:bg-gray-700 rounded-lg hover:bg-red-100 dark:hover:bg-gray-600 transition"
+                className="flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-red-600 dark:text-red-400 bg-red-50 dark:bg-gray-700 rounded-lg hover:bg-red-100 dark:hover:bg-gray-600 transition"
               >
                 <FiCpu /> Simplify with AI
               </button>
@@ -270,7 +324,7 @@ const FlashcardDetails = () => {
         </div>
       </div>
 
-      {/* 2. PRINT-ONLY VIEW (Automatically active when clicking 'Print Cards') */}
+      {/* 2. PRINT-ONLY VIEW */}
       <div className="hidden print:block space-y-4">
         <h2 className="text-lg font-bold text-gray-800 border-b pb-2">All Terms & Definitions</h2>
         <div className="space-y-4">
