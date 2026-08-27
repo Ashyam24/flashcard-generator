@@ -9,11 +9,26 @@ const MyFlashcards = () => {
   const cards = useSelector((state) => state.flashcards.cards || []);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Real-time case-insensitive filter
-  const filteredCards = cards.filter((group) =>
-    group.groupName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    group.description?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Deep Search Filter: Checks Group Name, Description, and ALL individual Terms/Definitions
+  const filteredCards = cards.filter((group) => {
+    // Standardize the search query to lowercase and remove accidental spaces
+    const query = searchTerm.toLowerCase().trim();
+
+    // 1. Check if the group name or description matches the query
+    const matchesGroup =
+      group.groupName?.toLowerCase().includes(query) ||
+      group.description?.toLowerCase().includes(query);
+
+    // 2. Deep check: Look inside the nested 'terms' array to see if any term or definition matches
+    const matchesTerms = group.terms?.some(
+      (term) =>
+        term.termName?.toLowerCase().includes(query) ||
+        term.definition?.toLowerCase().includes(query)
+    );
+
+    // Return the card if the query is found anywhere in the group OR its terms
+    return matchesGroup || matchesTerms;
+  });
 
   const handleDelete = (id, groupName, e) => {
     e.preventDefault();
@@ -41,7 +56,7 @@ const MyFlashcards = () => {
             <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
-              placeholder="Search flashcards..."
+              placeholder="Search flashcards, terms, or definitions..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm outline-none focus:ring-2 focus:ring-red-500 transition shadow-sm"
