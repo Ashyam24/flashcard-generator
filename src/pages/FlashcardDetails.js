@@ -10,7 +10,8 @@ import {
   FiCheck, 
   FiChevronLeft, 
   FiChevronRight, 
-  FiEdit2 
+  FiEdit2,
+  FiRotateCw
 } from 'react-icons/fi';
 
 const FlashcardDetails = () => {
@@ -20,8 +21,9 @@ const FlashcardDetails = () => {
   const cards = useSelector((state) => state.flashcards.cards);
   const currentGroup = cards.find((group) => group.id === id);
 
-  // Local state management for UI and active flashcard term indexing
+  // Local state management for active card, flip state, and share modal
   const [activeTermIndex, setActiveTermIndex] = useState(0);
+  const [isFlipped, setIsFlipped] = useState(false); // Controls Question (Term) vs Answer (Definition) view
   const [showShareModal, setShowShareModal] = useState(false);
   const [copied, setCopied] = useState(false);
   const printRef = useRef(null);
@@ -45,7 +47,7 @@ const FlashcardDetails = () => {
   const handleCopyLink = () => {
     navigator.clipboard.writeText(window.location.href);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2500); // Reset copy icon after 2.5 seconds
+    setTimeout(() => setCopied(false), 2500);
   };
 
   // System print trigger
@@ -53,16 +55,14 @@ const FlashcardDetails = () => {
     window.print();
   };
 
-  // Generate a beautifully formatted, human-readable Text file (.txt) of the flashcards
+  // Generate a formatted, human-readable Text file (.txt) of the flashcards
   const handleDownload = () => {
-    // 1. Create a structured, readable text layout
-    let content = `📚 FLASHCARD DECK: ${currentGroup.groupName.toUpperCase()} 📚\n`;
-    content += `📝 Description: ${currentGroup.description}\n`;
-    content += `📊 Total Cards: ${currentGroup.terms?.length || 0}\n`;
-    content += `📅 Exported on: ${new Date().toLocaleDateString()}\n`;
+    let content = `FLASHCARD DECK: ${currentGroup.groupName.toUpperCase()}\n`;
+    content += `Description: ${currentGroup.description}\n`;
+    content += `Total Cards: ${currentGroup.terms?.length || 0}\n`;
+    content += `Exported on: ${new Date().toLocaleDateString()}\n`;
     content += `======================================================\n\n`;
 
-    // 2. Loop through each term and format it clearly
     currentGroup.terms?.forEach((term, index) => {
       content += `CARD #${index + 1}\n`;
       content += `▶ TERM: ${term.termName}\n`;
@@ -70,18 +70,13 @@ const FlashcardDetails = () => {
       content += `------------------------------------------------------\n\n`;
     });
 
-    // 3. Convert string to a Blob (Binary Large Object) for text download
     const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-    
-    // 4. Create a temporary anchor link to trigger the download
     const downloadAnchor = document.createElement('a');
     downloadAnchor.href = URL.createObjectURL(blob);
     
-    // 5. Clean up the filename (removes special characters and spaces)
     const safeFileName = currentGroup.groupName.replace(/[^a-zA-Z0-9]/g, '_');
     downloadAnchor.download = `${safeFileName}_Flashcards.txt`;
     
-    // 6. Append to body, trigger download click, and immediately clean up
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     document.body.removeChild(downloadAnchor);
@@ -91,6 +86,7 @@ const FlashcardDetails = () => {
   const handleNext = () => {
     if (activeTermIndex < currentGroup.terms.length - 1) {
       setActiveTermIndex((prev) => prev + 1);
+      setIsFlipped(false); // Reset to question side for next card
     }
   };
 
@@ -98,7 +94,14 @@ const FlashcardDetails = () => {
   const handlePrev = () => {
     if (activeTermIndex > 0) {
       setActiveTermIndex((prev) => prev - 1);
+      setIsFlipped(false); // Reset to question side for previous card
     }
+  };
+
+  // Select term directly from sidebar
+  const handleSelectTerm = (index) => {
+    setActiveTermIndex(index);
+    setIsFlipped(false); // Reset to question side
   };
 
   return (
@@ -143,7 +146,7 @@ const FlashcardDetails = () => {
             {currentGroup.terms?.map((term, index) => (
               <button
                 key={index}
-                onClick={() => setActiveTermIndex(index)}
+                onClick={() => handleSelectTerm(index)}
                 className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition flex items-center justify-between ${
                   activeTermIndex === index
                     ? 'bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 font-bold border-l-4 border-red-500'
@@ -156,35 +159,70 @@ const FlashcardDetails = () => {
           </div>
         </div>
 
-        {/* Center Column: Selected Card Viewer */}
+        {/* Center Column: Active Recall Flip Card */}
         <div className="lg:col-span-2 space-y-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 min-h-[380px] flex flex-col justify-between">
-            <div>
-              {/* Term Image (if uploaded) */}
-              {activeTerm.termImage && (
-                <div className="mb-4 w-full h-56 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
-                  <img
-                    src={activeTerm.termImage}
-                    alt={activeTerm.termName}
-                    className="w-full h-full object-contain"
-                  />
+          <div 
+            onClick={() => setIsFlipped((prev) => !prev)}
+            className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 min-h-[380px] flex flex-col justify-between cursor-pointer transition-all duration-200 hover:shadow-md hover:border-red-300 dark:hover:border-gray-600 select-none group"
+          >
+            {/* Top Indicator / Mode Badge */}
+            <div className="flex items-center justify-between">
+              <span className={`text-xs uppercase font-bold tracking-wider px-3 py-1 rounded-full ${
+                isFlipped 
+                  ? 'bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-400' 
+                  : 'bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400'
+              }`}>
+                {isFlipped ? 'Definition (Answer)' : 'Term (Question)'}
+              </span>
+              <span className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1 group-hover:text-red-500 transition">
+                <FiRotateCw className="w-3.5 h-3.5" /> Click card to flip
+              </span>
+            </div>
+
+            {/* Card Content Area */}
+            <div className="flex-1 flex flex-col justify-center py-6 text-center">
+              {!isFlipped ? (
+                /* FRONT: Term Name & Image */
+                <div className="space-y-4">
+                  {activeTerm.termImage && (
+                    <div className="w-full h-44 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 mx-auto max-w-sm">
+                      <img
+                        src={activeTerm.termImage}
+                        alt={activeTerm.termName}
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                  )}
+                  <h3 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
+                    {activeTerm.termName}
+                  </h3>
+                  <p className="text-xs text-gray-400">
+                    Click anywhere to reveal the definition
+                  </p>
+                </div>
+              ) : (
+                /* BACK: Definition */
+                <div className="space-y-3 px-4 max-w-lg mx-auto">
+                  <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                    Definition
+                  </span>
+                  <p className="text-gray-800 dark:text-gray-200 text-lg leading-relaxed whitespace-pre-wrap font-medium">
+                    {activeTerm.definition}
+                  </p>
                 </div>
               )}
-
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
-                {activeTerm.termName}
-              </h3>
-              <p className="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap text-base">
-                {activeTerm.definition}
-              </p>
             </div>
 
             {/* Pagination Controls */}
-            <div className="pt-6 mt-6 border-t border-gray-100 dark:border-gray-700 flex items-center justify-center gap-4">
+            <div 
+              onClick={(e) => e.stopPropagation()} 
+              className="pt-4 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between"
+            >
               <button
                 onClick={handlePrev}
                 disabled={activeTermIndex === 0}
                 className="p-2.5 rounded-lg border border-gray-200 dark:border-gray-700 disabled:opacity-30 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition"
+                title="Previous Card"
               >
                 <FiChevronLeft className="w-5 h-5" />
               </button>
@@ -197,6 +235,7 @@ const FlashcardDetails = () => {
                 onClick={handleNext}
                 disabled={activeTermIndex === (currentGroup.terms?.length || 1) - 1}
                 className="p-2.5 rounded-lg border border-gray-200 dark:border-gray-700 disabled:opacity-30 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition"
+                title="Next Card"
               >
                 <FiChevronRight className="w-5 h-5" />
               </button>
