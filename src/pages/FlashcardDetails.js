@@ -38,13 +38,14 @@ const FlashcardDetails = () => {
     );
   }
 
+  // Safely grab the currently active term based on the index state
   const activeTerm = currentGroup.terms?.[activeTermIndex] || {};
 
-  // Clipboard share handler
+  // Clipboard share handler for copying the current URL
   const handleCopyLink = () => {
     navigator.clipboard.writeText(window.location.href);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
+    setTimeout(() => setCopied(false), 2500); // Reset copy icon after 2.5 seconds
   };
 
   // System print trigger
@@ -52,36 +53,48 @@ const FlashcardDetails = () => {
     window.print();
   };
 
-  // Export current flashcard group to a human-readable text file (.txt)
+  // Generate a beautifully formatted, human-readable Text file (.txt) of the flashcards
   const handleDownload = () => {
-    let content = `========================================\n`;
-    content += `FLASHCARD GROUP: ${currentGroup.groupName}\n`;
-    content += `DESCRIPTION: ${currentGroup.description}\n`;
-    content += `TOTAL TERMS: ${currentGroup.terms?.length || 0}\n`;
-    content += `========================================\n\n`;
+    // 1. Create a structured, readable text layout
+    let content = `📚 FLASHCARD DECK: ${currentGroup.groupName.toUpperCase()} 📚\n`;
+    content += `📝 Description: ${currentGroup.description}\n`;
+    content += `📊 Total Cards: ${currentGroup.terms?.length || 0}\n`;
+    content += `📅 Exported on: ${new Date().toLocaleDateString()}\n`;
+    content += `======================================================\n\n`;
 
+    // 2. Loop through each term and format it clearly
     currentGroup.terms?.forEach((term, index) => {
-      content += `[TERM ${index + 1}]: ${term.termName}\n`;
-      content += `[DEFINITION]: ${term.definition}\n`;
-      content += `----------------------------------------\n`;
+      content += `CARD #${index + 1}\n`;
+      content += `▶ TERM: ${term.termName}\n`;
+      content += `▶ DEFINITION: ${term.definition}\n`;
+      content += `------------------------------------------------------\n\n`;
     });
 
+    // 3. Convert string to a Blob (Binary Large Object) for text download
     const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    
+    // 4. Create a temporary anchor link to trigger the download
     const downloadAnchor = document.createElement('a');
     downloadAnchor.href = URL.createObjectURL(blob);
-    downloadAnchor.download = `${currentGroup.groupName.replace(/\s+/g, '_')}_flashcards.txt`;
+    
+    // 5. Clean up the filename (removes special characters and spaces)
+    const safeFileName = currentGroup.groupName.replace(/[^a-zA-Z0-9]/g, '_');
+    downloadAnchor.download = `${safeFileName}_Flashcards.txt`;
+    
+    // 6. Append to body, trigger download click, and immediately clean up
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
-    downloadAnchor.remove();
+    document.body.removeChild(downloadAnchor);
   };
 
-  // Pagination navigation controls
+  // Pagination navigation controls (Next Card)
   const handleNext = () => {
     if (activeTermIndex < currentGroup.terms.length - 1) {
       setActiveTermIndex((prev) => prev + 1);
     }
   };
 
+  // Pagination navigation controls (Previous Card)
   const handlePrev = () => {
     if (activeTermIndex > 0) {
       setActiveTermIndex((prev) => prev - 1);
@@ -147,7 +160,7 @@ const FlashcardDetails = () => {
         <div className="lg:col-span-2 space-y-4">
           <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 min-h-[380px] flex flex-col justify-between">
             <div>
-              {/* Term Image */}
+              {/* Term Image (if uploaded) */}
               {activeTerm.termImage && (
                 <div className="mb-4 w-full h-56 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
                   <img
@@ -213,7 +226,7 @@ const FlashcardDetails = () => {
             onClick={handleDownload}
             className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition font-medium"
           >
-            <FiDownload /> Download Cards (.txt)
+            <FiDownload /> Download Text
           </button>
 
           <button
